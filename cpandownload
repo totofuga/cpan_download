@@ -1,0 +1,60 @@
+#!/usr/bin/env perl
+
+use URI;
+use LWP::UserAgent;
+use HTML::TreeBuilder::XPath;
+use Data::Dumper;
+use Pod::Usage;
+
+if ( @ARGV != 1 ) {
+    pod2usage();
+}
+
+my $module_name = $ARGV[0];
+my $cpan_search_uri = URI->new('http://search.cpan.org/search');
+$cpan_search_uri->query_form( { query => $module_name } );
+
+my $ua = LWP::UserAgent->new();
+
+my $search_res = $ua->get($cpan_search_uri);
+die "not connection cpan search : $cpan_search_uri"  unless $search_res->is_success();
+
+my $cpan_search_tree = HTML::TreeBuilder::XPath->new();
+$cpan_search_tree->parse($search_res->content());
+
+# モジュール名を完全に入力してれば一番最初に出てくるはず
+my $node = $cpan_search_tree->findnodes('//h2[@class="sr"]/a')->[0];
+
+
+die 'モジュールが見つかりません' if ( $module_name ne $node->content()->[0]->as_text );
+
+
+my $cpan_module_uri = URI->new('http://search.cpan.org');
+$cpan_module_uri->path($node->attr('href'));
+my $module_res = $ua->get($cpan_module_uri);
+
+die "not connection cpan search : $cpan_module_uri" unless $module_res->is_success();
+
+my ($tar_gz_url_str) = $module_res->content =~ /<a href="([^"]+)">[^<]+\.tar\.gz<\/a>/;
+
+my $download_uri = URI->new('http://search.cpan.org');
+$download_uri->path($tar_gz_url_str);
+
+(my $file_name = $tar_gz_url_str) =~ s/^.*\///;
+my $download_res = $ua->get($download_uri, ":content_file" => $file_name);
+
+die "ファイルのダウンロードに失敗しました" unless ( $download_res->is_success );
+
+print $file_name. "をダウンロードしました。\n";
+
+
+=head1 NAME
+
+cpanlist - インストールされているcpanを表示
+
+=head1 SYNOPSIS
+
+cpandownload module-name
+    module-name:
+        モジュール名　例：Class::Accessor::Fast
+=cut
