@@ -26,7 +26,7 @@ $cpan_search_tree->parse($search_res->content());
 my $node = $cpan_search_tree->findnodes('//h2[@class="sr"]/a')->[0];
 
 
-die 'モジュールが見つかりません' if ( $module_name ne $node->content()->[0]->as_text );
+die 'モジュールが見つかりません' if ( !defined $node || $module_name ne $node->content()->[0]->as_text );
 
 
 my $cpan_module_uri = URI->new('http://search.cpan.org');
