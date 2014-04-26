@@ -5,6 +5,7 @@ use LWP::UserAgent;
 use HTML::TreeBuilder::XPath;
 use Data::Dumper;
 use Pod::Usage;
+use Archive::Tar;
 
 if ( @ARGV != 1 ) {
     pod2usage();
@@ -46,6 +47,12 @@ my $download_res = $ua->get($download_uri, ":content_file" => $file_name);
 die "ファイルのダウンロードに失敗しました" unless ( $download_res->is_success );
 
 print $file_name. "をダウンロードしました。\n";
+
+# 解凍
+Archive::Tar->extract_archive($file_name);
+
+# 解凍したので解凍元を削除
+unlink($file_name);
 
 
 =head1 NAME
